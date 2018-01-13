@@ -37,8 +37,8 @@ function init() {
                           x_fill: true,
                           y_fill: false,
                           track_hover: true });
-    let icon = new St.Icon({ icon_name: 'system-run-symbolic',
-                             style_class: 'system-status-icon' });
+    let icon = new St.Icon({ icon_name: 'nix-snowflake',
+                             style_class: 'nix-snowflake' });
 
     button.set_child(icon);
     button.connect('button-press-event', _showHello);
