@@ -1,0 +1,6 @@
+{
+    "name": "Nix Channel age",
+    "description": "Show the age of nix-channels",
+    "uuid": "nix-channel-age@elis.hirwing.se",
+    "shell-version": [ "3.26.2" ]
+}
