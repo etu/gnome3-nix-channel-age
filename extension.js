@@ -1,53 +1,129 @@
 
+const Clutter = imports.gi.Clutter;
+const Lang = imports.lang;
 const St = imports.gi.St;
 const Main = imports.ui.main;
-const Tweener = imports.ui.tweener;
+const PanelMenu = imports.ui.panelMenu;
+const PopupMenu = imports.ui.popupMenu;
+const ExtensionUtils = imports.misc.extensionUtils;
+const Me = ExtensionUtils.getCurrentExtension();
+const NixChannels = Me.imports.nixChannels;
 
-let text, button;
+let _indicator;
 
-function _hideHello() {
-    Main.uiGroup.remove_actor(text);
-    text = null;
-}
+const NixChannelMenuItem = new Lang.Class({
+    Name: 'NixChannelMenuItem',
+    Extends: PopupMenu.PopupBaseMenuItem,
 
-function _showHello() {
-    if (!text) {
-        text = new St.Label({ style_class: 'helloworld-label', text: "Hello, world!" });
-        Main.uiGroup.add_actor(text);
+    _init: function(info) {
+        this.parent();
+        this._info = info;
+
+
+        this._label = new St.Label({ text: info.name + ' -- ' + info.age });
+        this.actor.add_child(this._label);
+
+        this._changedId = info.connect('changed',
+                                       Lang.bind(this, this._propertiesChanged));
+    },
+
+    destroy: function() {
+        if (this._changedId) {
+            this._info.disconnect(this._changedId);
+            this._changedId = 0;
+        }
+
+        this.parent();
+    },
+
+    activate: function(event) {
+        this._info.launch(event.get_time());
+
+        this.parent(event);
+    },
+
+    _propertiesChanged: function(info) {
+        this._icon.gicon = info.icon;
+        this._label.text = info.name;
+    },
+});
+
+const NixChannelMenu = new Lang.Class({
+    Name: 'NixChannelMenu.NixChannelMenu',
+    Extends: PanelMenu.Button,
+
+    _init: function () {
+        this.parent(0.0, 'Nix Channel Age');
+
+        // Create button to show in toolbar
+        let hbox = new St.BoxLayout({ style_class: 'panel-status-menu-box' });
+
+        // Create label for button
+        let label = new St.Label({ text: 'Nix Channel Age',
+                                   y_expand: true,
+                                   y_align: Clutter.ActorAlign.CENTER });
+
+        // Add label and arrow to button
+        hbox.add_child(label);
+        hbox.add_child(PopupMenu.arrowIcon(St.Side.BOTTOM));
+
+        // Makes sure to add the menu to the bar
+        this.actor.add_actor(hbox);
+
+        // Helper class to populate data
+        this.channelsManager = new NixChannels.ChannelsManager();
+
+        // Create a section in the menu
+        this._channels = new PopupMenu.PopupMenuSection();
+
+        // Create menu items
+        this._redisplay();
+
+        // Add items to menu
+        this.menu.addMenuItem(this._channels);
+    },
+
+    /**
+     * Destroy the instance of this class and it's dependencies
+     */
+    destroy: function () {
+        this.channelsManager.destroy();
+        this.parent();
+    },
+
+    /**
+     * Remove all channel data and run the create function again
+     */
+    _redisplay: function () {
+        this._channels.removeAll();
+        this._create();
+    },
+
+    /**
+     * Create menu entries for all channels that our channel manager returned
+     */
+    _create: function () {
+        // Get channels
+        let channels = this.channelsManager.get();
+
+        // Loop channels and create menu entries
+        for (let i = 0; i < channels.length; i++) {
+            this._channels.addMenuItem(new NixChannelMenuItem(channels[i]));
+        }
     }
-
-    text.opacity = 255;
-
-    let monitor = Main.layoutManager.primaryMonitor;
-
-    text.set_position(monitor.x + Math.floor(monitor.width / 2 - text.width / 2),
-                      monitor.y + Math.floor(monitor.height / 2 - text.height / 2));
-
-    Tweener.addTween(text,
-                     { opacity: 0,
-                       time: 2,
-                       transition: 'easeOutQuad',
-                       onComplete: _hideHello });
-}
+});
 
 function init() {
-    button = new St.Bin({ style_class: 'panel-button',
-                          reactive: true,
-                          can_focus: true,
-                          x_fill: true,
-                          y_fill: false,
-                          track_hover: true });
-    let icon = new St.Icon({ icon_name: 'nix-snowflake',
-                             style_class: 'nix-snowflake' });
-
-    button.set_child(icon);
-    button.connect('button-press-event', _showHello);
+    _indicator = new NixChannelMenu();
 }
 
 function enable() {
-    Main.panel._rightBox.insert_child_at_index(button, 0);
+    let position = 1;
+    let align = 'right';
+
+    Main.panel.addToStatusArea('nix-channel-age', _indicator, position, align);
 }
 
 function disable() {
-    Main.panel._rightBox.remove_child(button);
+    _indicator.destroy();
 }
