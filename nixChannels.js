@@ -23,7 +23,7 @@ var ChannelsManager = new Lang.Class({
 
         this._apiUrl = 'https://howoldis.herokuapp.com/api/channels';
 
-        this._loadData();
+        this._refreshData();
     },
 
     /**
