@@ -73,10 +73,13 @@ var ChannelsManager = new Lang.Class({
     },
 
     _updateData: function (data) {
-        this._channels = [
-            new ChannelInfo('my channel name', '4days'),
-            new ChannelInfo('my fast channel name', '1days'),
-        ];
+        let channels = [];
+
+        for (let i = 0; i < data.length; i++) {
+            channels[i] = new ChannelInfo(data[i].name, data[i].humantime);
+        }
+
+        this._channels = channels;
     },
 
     get: function () {
