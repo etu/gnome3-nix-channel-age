@@ -1,6 +1,8 @@
 {
+    "extension-id": "nix-channel-age",
     "name": "Nix Channel age",
     "description": "Show the age of nix-channels",
     "uuid": "nix-channel-age@elis.hirwing.se",
+    "url": "https://github.com/etu/gnome3-nix-channel-age",
     "shell-version": [ "3.26.2" ]
 }
