@@ -1,6 +1,7 @@
 
 const Lang = imports.lang;
 const Signals = imports.signals;
+const Soup = imports.gi.Soup; // HTTP Library
 
 const ChannelInfo = new Lang.Class({
     Name: 'ChannelInfo',
@@ -17,6 +18,34 @@ var ChannelsManager = new Lang.Class({
     Name: 'ChannelsManager',
 
     _init: function () {
+        this._channels = [];
+
+        this._apiUrl = 'https://howoldis.herokuapp.com/api/channels';
+
+        this._loadData();
+    },
+
+    _loadData: function () {
+        // New HTTP session
+        let httpSession = new Soup.Session();
+
+        // New request
+        let req = Soup.form_request_new_from_hash('GET', this._apiUrl, []);
+
+        // Execute the http request and create callback
+        httpSession.queue_message(req, Lang.bind(this, function (httpSession, result) {
+            if (result.status_code !== 200) {
+                return;
+            }
+
+            let json = JSON.parse(result.response_body.data);
+
+            // Send data back to a method to update the UI
+            this._updateData(json);
+        }));
+    },
+
+    _updateData: function (data) {
         this._channels = [
             new ChannelInfo('my channel name', '4days'),
             new ChannelInfo('my fast channel name', '1days'),
