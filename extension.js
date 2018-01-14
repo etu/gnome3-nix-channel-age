@@ -8,6 +8,7 @@ const PopupMenu = imports.ui.popupMenu;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const NixChannels = Me.imports.nixChannels;
+const Mainloop = imports.mainloop;
 
 let _indicator;
 
@@ -77,10 +78,35 @@ const NixChannelMenu = new Lang.Class({
         this._channels = new PopupMenu.PopupMenuSection();
 
         // Create menu items
-        this._redisplay();
+        this._refreshUI();
 
         // Add items to menu
         this.menu.addMenuItem(this._channels);
+    },
+
+    /**
+     * Method to have a loop that fetches data from the ChannelsManager class
+     * periodacly and put's it in the menu.
+     */
+    _refreshUI: function () {
+        this._redisplay();
+
+        // Stop the timer
+        this._removeTimeout();
+
+        // Create a new timer
+        this._timeout = Mainloop.timeout_add_seconds(
+            10,
+            Lang.bind(this, this._refreshUI)
+        );
+
+        return true;
+    },
+    _removeTimeout: function () {
+        if (this._timeout) {
+            Mainloop.source_remove(this._timeout);
+            this._timeout = null;
+        }
     },
 
     /**
@@ -88,6 +114,7 @@ const NixChannelMenu = new Lang.Class({
      */
     destroy: function () {
         this.channelsManager.destroy();
+        this._removeTimeout();
         this.parent();
     },
 
