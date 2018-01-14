@@ -1,6 +1,7 @@
 
 const Lang = imports.lang;
 const Signals = imports.signals;
+const Mainloop = imports.mainloop;
 const Soup = imports.gi.Soup; // HTTP Library
 
 const ChannelInfo = new Lang.Class({
@@ -23,6 +24,32 @@ var ChannelsManager = new Lang.Class({
         this._apiUrl = 'https://howoldis.herokuapp.com/api/channels';
 
         this._loadData();
+    },
+
+    /**
+     * Method to have a loop that fetches data from the internet and puts it in
+     * the list of data so we can serve it to the UI.
+     */
+    _refreshData: function () {
+        // Load data from the internet
+        this._loadData();
+
+        // Stop the timer
+        this._removeTimeout();
+
+        // Create a new timer
+        this._timeout = Mainloop.timeout_add_seconds(
+            1800,
+            Lang.bind(this, this._refreshData)
+        );
+
+        return true;
+    },
+    _removeTimeout: function () {
+        if (this._timeout) {
+            Mainloop.source_remove(this._timeout);
+            this._timeout = null;
+        }
     },
 
     _loadData: function () {
